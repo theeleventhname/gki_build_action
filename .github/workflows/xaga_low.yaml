@@ -1,4 +1,4 @@
-name: Build Xaga Kernel
+name: Build Xaga_low Kernel
 
 on:
   workflow_dispatch:
