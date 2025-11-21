@@ -7,11 +7,19 @@ on:
       KERNEL_SOURCE:
         description: 'Kernel Source'
         required: true
-        default: 'xiaomi-mediatek-devs/android_kernel_xiaomi_mt6895'
+        default: 'xiaomi-mt6895-devs/android_kernel_xiaomi_mt6895'
       KERNEL_SOURCE_BRANCH:
         description: 'Branch'
         required: true
-        default: 'lineage-22.2'      
+        default: 'lineage-23.0'      
+      SUSFS_SOURCE:
+        description: 'Susfs Source'
+        required: true
+        default: 'ShirkNeko/susfs4ksu'
+      SUSFS_SOURCE_BRANCH:
+        description: 'Branch'
+        required: true
+        default: 'gki-android12-5.10'     
 
 jobs:
   build:
@@ -48,14 +56,30 @@ jobs:
         path: project
         submodules: recursive
         fetch-depth: 1
+
+    - name: Checkout Susfs Source
+      uses: actions/checkout@v4
+      with:
+        github-server-url: 'https://github.com'
+        repository: ${{ env.SUSFS_SOURCE }}
+        ref: ${{ env.SUSFS_SOURCE_BRANCH }}
+        path: susfs
+        submodules: recursive
+        fetch-depth: 1
             
     - name: Setup Patches
       run: |
         cd project
+        curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
+        cp ../susfs/kernel_patches/fs/* ./fs/
+        cp ../susfs/kernel_patches/include/linux/* ./include/linux/
+        cp ../susfs/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch ./
         sed -i 's/drivers\/input\/misc\/aw8697_haptic\/Kconfig/drivers\/input\/misc\/aw8697_haptic\/Kconfig\"/g' drivers/input/misc/Kconfig
         sed -i 's/drivers\/input\/misc\/aw8624_haptic\/Kconfig/drivers\/input\/misc\/aw8624_haptic\/Kconfig\"/g' drivers/input/misc/Kconfig
         dos2unix drivers/input/touchscreen/goodix_9916/Kconfig
         sed -i 's/-dirty//g' scripts/setlocalversion
+        patch -p1 < 50_add_susfs_in_gki-android12-5.10.patch
+        echo -e "CONFIG_KSU=y \n# CONFIG_KSU_DEBUG is not set \n# CONFIG_KSU_ALLOWLIST_WORKAROUND is not set \nCONFIG_KSU_SUSFS=y \nCONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y \nCONFIG_KSU_SUSFS_SUS_SU=n \nCONFIG_KSU_SUSFS_SUS_PATH=y \nCONFIG_KSU_SUSFS_SUS_MOUNT=y \nCONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y \nCONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y \nCONFIG_KSU_SUSFS_SUS_KSTAT=y \n# CONFIG_KSU_SUSFS_SUS_OVERLAYFS is not set \nCONFIG_KSU_SUSFS_TRY_UMOUNT=y \nCONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y \nCONFIG_KSU_SUSFS_SPOOF_UNAME=y \nCONFIG_KSU_SUSFS_ENABLE_LOG=y \nCONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y \nCONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y \nCONFIG_KSU_SUSFS_OPEN_REDIRECT=y \n# gki  needs enable kprobes \nCONFIG_KSU_WITH_KPROBES=y \nCONFIG_HAVE_KPROBES=y \nCONFIG_KPROBE_EVENTS=y" >> arch/arm64/configs/gki_defconfig
               
     - name: Build kernel
       run: |
