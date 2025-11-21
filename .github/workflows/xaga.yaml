@@ -73,9 +73,9 @@ jobs:
       run: |
         cd project
         curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
-        cp ../susfs/kernel_patches/fs/* ./fs/
-        cp ../susfs/kernel_patches/include/linux/* ./include/linux/
-        cp ../susfs/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch ./
+        cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/fs/* ./fs/
+        cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/include/linux/* ./include/linux/
+        cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch ./
         sed -i 's/drivers\/input\/misc\/aw8697_haptic\/Kconfig/drivers\/input\/misc\/aw8697_haptic\/Kconfig\"/g' drivers/input/misc/Kconfig
         sed -i 's/drivers\/input\/misc\/aw8624_haptic\/Kconfig/drivers\/input\/misc\/aw8624_haptic\/Kconfig\"/g' drivers/input/misc/Kconfig
         dos2unix drivers/input/touchscreen/goodix_9916/Kconfig
