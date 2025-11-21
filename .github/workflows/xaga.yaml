@@ -1,0 +1,78 @@
+name: Build Xaga Kernel
+
+on:
+  workflow_dispatch:
+
+    inputs:
+      KERNEL_SOURCE:
+        description: 'Kernel Source'
+        required: true
+        default: 'xiaomi-mediatek-devs/android_kernel_xiaomi_mt6895'
+      KERNEL_SOURCE_BRANCH:
+        description: 'Branch'
+        required: true
+        default: 'lineage-22.2'      
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+          fetch-depth: 0
+          
+    - name: Setup Configuration
+      run: |
+        echo "KERNEL_SOURCE=${{ github.event.inputs.KERNEL_SOURCE }}" >> $GITHUB_ENV
+        echo "KERNEL_SOURCE_BRANCH=${{ github.event.inputs.KERNEL_SOURCE_BRANCH }}" >> $GITHUB_ENV
+
+    
+    - name: Setup build kernel environment
+      run: |
+        echo "BUILD_TIME=$(TZ=Asia/Shanghai date "+%Y%m%d%H%M")" >> $GITHUB_ENV
+        sudo apt-get update
+        sudo apt-get install git flex lzop bison make libssl-dev python3 python-is-python3 libncurses-dev dos2unix
+
+
+
+    - name: Download Clang Toolchain
+      run: |
+        git clone --depth 1 https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b clang
+
+    - name: Checkout Kernel Source
+      uses: actions/checkout@v4
+      with:
+        github-server-url: 'https://github.com'
+        repository: ${{ env.KERNEL_SOURCE }}
+        ref: ${{ env.KERNEL_SOURCE_BRANCH }}
+        path: project
+        submodules: recursive
+        fetch-depth: 1
+            
+    - name: Setup Patches
+      run: |
+        cd project
+        sed -i 's/drivers\/input\/misc\/aw8697_haptic\/Kconfig/drivers\/input\/misc\/aw8697_haptic\/Kconfig\"/g' drivers/input/misc/Kconfig
+        sed -i 's/drivers\/input\/misc\/aw8624_haptic\/Kconfig/drivers\/input\/misc\/aw8624_haptic\/Kconfig\"/g' drivers/input/misc/Kconfig
+        dos2unix drivers/input/touchscreen/goodix_9916/Kconfig
+        sed -i 's/-dirty//g' scripts/setlocalversion
+              
+    - name: Build kernel
+      run: |
+        cd project
+        export PATH=$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc/bin:$PATH
+        export ARCH=arm64
+        export SUBARCH=arm64
+        export CFLAGS="-mno-outline-atomics"
+        export CXXFLAGS="-mno-outline-atomics"
+        make O=out CC=clang ARCH=arm64 SUBARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-  CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 gki_defconfig vendor/xiaomi_mt6895.config vendor/xaga.config
+        make -j$(nproc --all) O=out CC=clang ARCH=arm64 SUBARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-  CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 TARGET_BUILD_VARIANT=user
+    
+
+    
+    - name: Upload the kernel zip
+      uses: actions/upload-artifact@v4
+      with:
+        name: xaga_${{ env.BUILD_TIME}}
+        path: |
+          /home/runner/work/My_KSU_Action/My_KSU_Action/project/out/arch/arm64/boot/*
