@@ -91,27 +91,10 @@ jobs:
         export PATH=$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc/bin:$PATH
         export ARCH=arm64
         export SUBARCH=arm64
-        
-        # 极端内存优化配置
-        export CFLAGS="-mno-outline-atomics -Wno-error"
-        export CXXFLAGS="-mno-outline-atomics -Wno-error"
-        export KCFLAGS="-Wno-error"
-        
-        # 配置内核
-        make O=out CC="clang -fuse-ld=lld" ARCH=arm64 SUBARCH=arm64 \
-          CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
-          LLVM=1 LLVM_IAS=1 gki_defconfig vendor/xiaomi_mt6895.config vendor/xaga.config
-        
-        # 分阶段编译，减少内存峰值
-        echo "阶段1：编译内核对象..."
-        make -j2 O=out CC="clang -fuse-ld=lld" ARCH=arm64 SUBARCH=arm64 \
-          CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
-          LLVM=1 LLVM_IAS=1 TARGET_BUILD_VARIANT=user modules_prepare
-          
-        echo "阶段2：最终链接..."
-        make -j1 O=out CC="clang -fuse-ld=lld" ARCH=arm64 SUBARCH=arm64 \
-          CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
-          LLVM=1 LLVM_IAS=1 TARGET_BUILD_VARIANT=user
+        export CFLAGS="-mno-outline-atomics"
+        export CXXFLAGS="-mno-outline-atomics"
+        make O=out CC=clang ARCH=arm64 SUBARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-  CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 gki_defconfig vendor/xiaomi_mt6895.config vendor/xaga.config
+        make -j($(nproc --all)/2) O=out CC=clang ARCH=arm64 SUBARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-  CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 TARGET_BUILD_VARIANT=user
     
 
     
