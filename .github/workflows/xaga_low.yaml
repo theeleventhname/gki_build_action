@@ -87,7 +87,7 @@ jobs:
               
     - name: Build kernel
       run: |
-       cd project
+        cd project
         export PATH=$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc/bin:$PATH
         export ARCH=arm64
         export SUBARCH=arm64
