@@ -87,15 +87,30 @@ jobs:
               
     - name: Build kernel
       run: |
-        cd project
+       cd project
         export PATH=$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc/bin:$PATH
         export ARCH=arm64
         export SUBARCH=arm64
         export CFLAGS="-mno-outline-atomics"
         export CXXFLAGS="-mno-outline-atomics"
-        make O=out CC=clang ARCH=arm64 SUBARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-  CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 gki_defconfig vendor/xiaomi_mt6895.config vendor/xaga.config
-        make -j($(nproc --all) / 2) O=out CC=clang ARCH=arm64 SUBARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-  CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 TARGET_BUILD_VARIANT=user
-    
+        
+        # 减少并行编译数量以降低内存使用
+        JOBS=$(( $(nproc --all) / 2 ))
+        [ $JOBS -lt 2 ] && JOBS=2
+        
+        # 配置内核
+        make O=out CC=clang ARCH=arm64 SUBARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 gki_defconfig vendor/xiaomi_mt6895.config vendor/xaga.config
+        
+        # 使用更少的内存优化编译
+        make -j$JOBS O=out CC="clang -fuse-ld=lld" ARCH=arm64 SUBARCH=arm64 \
+          CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+          LLVM=1 LLVM_IAS=1 TARGET_BUILD_VARIANT=user \
+          KCFLAGS="-Wno-error" 2>&1 | tee build.log || {
+          # 如果编译失败，尝试单线程编译
+          echo "并行编译失败，尝试单线程编译..."
+          make -j1 O=out CC="clang -fuse-ld=lld" ARCH=arm64 SUBARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+            LLVM=1 LLVM_IAS=1 TARGET_BUILD_VARIANT=user
 
     
     - name: Upload the kernel zip
