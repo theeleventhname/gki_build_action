@@ -72,7 +72,7 @@ jobs:
     - name: Setup Patches
       run: |
         cd project
-        curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
+        curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-dev
         ls ./
         cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/fs/* ./fs/
         cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/include/linux/* ./include/linux/
