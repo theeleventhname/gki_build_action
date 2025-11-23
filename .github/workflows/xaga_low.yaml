@@ -92,8 +92,8 @@ jobs:
         export ARCH=arm64
         JOBS=$(( $(nproc --all) / 2 ))
         export SUBARCH=arm64
-        export CFLAGS="-mno-outline-atomics"
-        export CXXFLAGS="-mno-outline-atomics"
+        export CFLAGS="-mno-outline-atomics -flto=thin"
+        export CXXFLAGS="-mno-outline-atomics -flto=thin"
         make O=out CC=clang ARCH=arm64 SUBARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-  CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 gki_defconfig vendor/xiaomi_mt6895.config vendor/xaga.config
         make -j$(nproc --all) O=out CC=clang ARCH=arm64 SUBARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-  CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 TARGET_BUILD_VARIANT=user
 
