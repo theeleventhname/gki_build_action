@@ -26,6 +26,10 @@ jobs:
         echo "KERNEL_SOURCE=${{ github.event.inputs.KERNEL_SOURCE }}" >> $GITHUB_ENV
         echo "KERNEL_SOURCE_BRANCH=${{ github.event.inputs.KERNEL_SOURCE_BRANCH }}" >> $GITHUB_ENV
 
+    - name: Setup Swap
+      uses: pierotofy/setup-swap@v1
+      with:
+        swap-size: 20G  
     
     - name: Setup build kernel environment
       run: |
