@@ -24,12 +24,7 @@ jobs:
     - name: Setup Configuration
       run: |
         echo "KERNEL_SOURCE=${{ github.event.inputs.KERNEL_SOURCE }}" >> $GITHUB_ENV
-        echo "KERNEL_SOURCE_BRANCH=${{ github.event.inputs.KERNEL_SOURCE_BRANCH }}" >> $GITHUB_ENV
-
-    - name: Setup Swap
-      uses: pierotofy/setup-swap@v1
-      with:
-        swap-size: 20G  
+        echo "KERNEL_SOURCE_BRANCH=${{ github.event.inputs.KERNEL_SOURCE_BRANCH }}" >> $GITHUB_ENV 
     
     - name: Setup build kernel environment
       run: |
@@ -37,7 +32,12 @@ jobs:
         sudo apt-get update
         sudo apt-get install git flex lzop bison make libssl-dev python3 python-is-python3 libncurses-dev dos2unix
 
-
+    - name: Setup 20GB Swap
+      run: |
+        sudo dd if=/dev/zero of=/swapfile bs=1M count=20480
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile
+        sudo swapon /swapfile
 
     - name: Download Clang Toolchain
       run: |
