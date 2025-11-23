@@ -41,7 +41,7 @@ jobs:
 
     - name: Download Clang Toolchain
       run: |
-        git clone --depth 1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+/refs/heads/main/clang-r547379 clang
+        git clone --depth 1 https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b clang
 
     - name: Checkout Kernel Source
       uses: actions/checkout@v4
