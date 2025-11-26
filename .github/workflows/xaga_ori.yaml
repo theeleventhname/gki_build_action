@@ -34,10 +34,10 @@ jobs:
 
     - name: Setup 20GB Swap
       run: |
-        sudo dd if=/dev/zero of=/swapfile bs=1M count=20480
-        sudo chmod 600 /swapfile
-        sudo mkswap /swapfile
-        sudo swapon /swapfile
+        sudo dd if=/dev/zero of=${GITHUB_WORKSPACE}/swapfile bs=1M count=20480
+        sudo chmod 600 ${GITHUB_WORKSPACE}/swapfile
+        sudo mkswap ${GITHUB_WORKSPACE}/swapfile
+        sudo swapon ${GITHUB_WORKSPACE}/swapfile
 
     - name: Download Clang Toolchain
       run: |
