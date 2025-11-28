@@ -19,7 +19,15 @@ on:
       SUSFS_SOURCE_BRANCH:
         description: 'Branch'
         required: true
-        default: 'gki-android12-5.10'     
+        default: 'gki-android12-5.10'
+      ENABLE_KPM:
+        description: 'KPM OPTION'
+        required: true
+        default: 'true'
+      ENABLE_VFS:
+        description: 'VFS OPTION'
+        required: false
+        default: 'true'
 
 jobs:
   build:
@@ -40,6 +48,8 @@ jobs:
         echo "KERNEL_SOURCE_BRANCH=${{ github.event.inputs.KERNEL_SOURCE_BRANCH }}" >> $GITHUB_ENV
         echo "SUSFS_SOURCE=${{ github.event.inputs.SUSFS_SOURCE }}" >> $GITHUB_ENV
         echo "SUSFS_SOURCE_BRANCH=${{ github.event.inputs.SUSFS_SOURCE_BRANCH }}" >> $GITHUB_ENV
+        echo "ENABLE_KPM=${{ github.event.inputs.ENABLE_KPM }}" >> $GITHUB_ENV
+        echo "ENABLE_VFS=${{ github.event.inputs.ENABLE_VFS }}" >> $GITHUB_ENV
 
     
     - name: Setup build kernel environment
@@ -87,8 +97,15 @@ jobs:
         sed -i 's/-dirty//g' scripts/setlocalversion
         patch -p1 < 50_add_susfs_in_gki-android12-5.10.patch
         echo -e "CONFIG_KSU=y \n# CONFIG_KSU_DEBUG is not set \n# CONFIG_KSU_ALLOWLIST_WORKAROUND is not set \nCONFIG_KSU_SUSFS=y \nCONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y \nCONFIG_KSU_SUSFS_SUS_SU=y \nCONFIG_KSU_SUSFS_SUS_PATH=y \nCONFIG_KSU_SUSFS_SUS_MAP=y \nCONFIG_KSU_SUSFS_SUS_MOUNT=y \nCONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y \nCONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y \nCONFIG_KSU_SUSFS_SUS_KSTAT=y \n# CONFIG_KSU_SUSFS_SUS_OVERLAYFS is not set \nCONFIG_KSU_SUSFS_TRY_UMOUNT=y \nCONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y \nCONFIG_KSU_SUSFS_SPOOF_UNAME=y \nCONFIG_KSU_SUSFS_ENABLE_LOG=y \nCONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y \nCONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y \nCONFIG_KSU_SUSFS_OPEN_REDIRECT=y \n# gki  needs enable kprobes \nCONFIG_KSU_WITH_KPROBES=y \nCONFIG_HAVE_KPROBES=y \nCONFIG_KPROBE_EVENTS=y" >> arch/arm64/configs/gki_defconfig
-       
-              
+
+    - name: Setup Additional Option
+      run: |
+        cd project  
+        if [[ "${{ env.ENABLE_KPM }}" == "true" ]];then
+          echo -e "CONFIG_KPM=y" >> arch/arm64/configs/gki_defconfig
+        fi
+        
+        
     - name: Build kernel
       run: |
         cd project
@@ -100,7 +117,17 @@ jobs:
         make O=out CC=clang ARCH=arm64 SUBARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-  CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 gki_defconfig vendor/xiaomi_mt6895.config vendor/xaga.config
         make -j$(nproc --all) O=out CC=clang ARCH=arm64 SUBARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-  CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 TARGET_BUILD_VARIANT=user
 
-    
+    - name: Apply config
+      run: |
+        cd /home/runner/work/gki_build_action/gki_build_action/project/out/arch/arm64/boot/
+        if [[ "${{ env.ENABLE_KPM }}" == "true" ]];then
+        curl -LO https://raw.githubusercontent.com/Numbersf/Action-Build/main/patch_linux
+          chmod +x patch_linux
+          ./patch_linux
+          rm -f Image
+          mv oImage Image
+        fi
+          
     - name: Upload the kernel zip
       uses: actions/upload-artifact@v4
       with:
