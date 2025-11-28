@@ -121,7 +121,7 @@ jobs:
       run: |
         cd /home/runner/work/gki_build_action/gki_build_action/project/out/arch/arm64/boot/
         if [[ "${{ env.ENABLE_KPM }}" == "true" ]];then
-          curl -LO https://raw.githubusercontent.com/Numbersf/Action-Build/main/patch_linux
+          curl -LO https://raw.githubusercontent.com/ShirkNeko/SukiSU_patch/refs/heads/main/kpm/patch_linux
           chmod +x patch_linux
           ./patch_linux
           rm -f Image
