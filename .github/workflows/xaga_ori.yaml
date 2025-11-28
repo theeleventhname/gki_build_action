@@ -12,6 +12,14 @@ on:
         description: 'Branch'
         required: true
         default: 'lineage-23.0'      
+      SUSFS_SOURCE:
+        description: 'Susfs Source'
+        required: true
+        default: 'ShirkNeko/susfs4ksu'
+      SUSFS_SOURCE_BRANCH:
+        description: 'Branch'
+        required: true
+        default: 'gki-android12-5.10'     
 
 jobs:
   build:
@@ -20,11 +28,19 @@ jobs:
     - uses: actions/checkout@v4
       with:
           fetch-depth: 0
+
+    - name: Set Swap Space
+      uses: pierotofy/set-swap-space@master
+      with:
+          swap-size-gb: 20
           
     - name: Setup Configuration
       run: |
         echo "KERNEL_SOURCE=${{ github.event.inputs.KERNEL_SOURCE }}" >> $GITHUB_ENV
-        echo "KERNEL_SOURCE_BRANCH=${{ github.event.inputs.KERNEL_SOURCE_BRANCH }}" >> $GITHUB_ENV 
+        echo "KERNEL_SOURCE_BRANCH=${{ github.event.inputs.KERNEL_SOURCE_BRANCH }}" >> $GITHUB_ENV
+        echo "SUSFS_SOURCE=${{ github.event.inputs.SUSFS_SOURCE }}" >> $GITHUB_ENV
+        echo "SUSFS_SOURCE_BRANCH=${{ github.event.inputs.SUSFS_SOURCE_BRANCH }}" >> $GITHUB_ENV
+
     
     - name: Setup build kernel environment
       run: |
@@ -32,12 +48,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install git flex lzop bison make libssl-dev python3 python-is-python3 libncurses-dev dos2unix
 
-    - name: Setup 20GB Swap
-      run: |
-        sudo dd if=/dev/zero of=${GITHUB_WORKSPACE}/swapfile bs=1M count=20480
-        sudo chmod 600 ${GITHUB_WORKSPACE}/swapfile
-        sudo mkswap ${GITHUB_WORKSPACE}/swapfile
-        sudo swapon ${GITHUB_WORKSPACE}/swapfile
+
 
     - name: Download Clang Toolchain
       run: |
@@ -52,26 +63,44 @@ jobs:
         path: project
         submodules: recursive
         fetch-depth: 1
+
+    - name: Checkout Susfs Source
+      uses: actions/checkout@v4
+      with:
+        github-server-url: 'https://github.com'
+        repository: ${{ env.SUSFS_SOURCE }}
+        ref: ${{ env.SUSFS_SOURCE_BRANCH }}
+        path: susfs
+        submodules: recursive
+        fetch-depth: 1
             
     - name: Setup Patches
       run: |
         cd project
+        curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
+        ls ./
+        cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/fs/* ./fs/
+        cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/include/linux/* ./include/linux/
+        cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch ./
         sed -i 's/drivers\/input\/misc\/aw8697_haptic\/Kconfig/drivers\/input\/misc\/aw8697_haptic\/Kconfig\"/g' drivers/input/misc/Kconfig
         sed -i 's/drivers\/input\/misc\/aw8624_haptic\/Kconfig/drivers\/input\/misc\/aw8624_haptic\/Kconfig\"/g' drivers/input/misc/Kconfig
         dos2unix drivers/input/touchscreen/goodix_9916/Kconfig
         sed -i 's/-dirty//g' scripts/setlocalversion
+        patch -p1 < 50_add_susfs_in_gki-android12-5.10.patch
+        ls ./
+        echo -e "CONFIG_KSU=y \n# CONFIG_KSU_DEBUG is not set \n# CONFIG_KSU_ALLOWLIST_WORKAROUND is not set \nCONFIG_KSU_SUSFS=y \nCONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y \nCONFIG_KSU_SUSFS_SUS_SU=y \nCONFIG_KSU_SUSFS_SUS_PATH=y \nCONFIG_KSU_SUSFS_SUS_MAP=y \nCONFIG_KSU_SUSFS_SUS_MOUNT=y \nCONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y \nCONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y \nCONFIG_KSU_SUSFS_SUS_KSTAT=y \n# CONFIG_KSU_SUSFS_SUS_OVERLAYFS is not set \nCONFIG_KSU_SUSFS_TRY_UMOUNT=y \nCONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y \nCONFIG_KSU_SUSFS_SPOOF_UNAME=y \nCONFIG_KSU_SUSFS_ENABLE_LOG=y \nCONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y \nCONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y \nCONFIG_KSU_SUSFS_OPEN_REDIRECT=y \n# gki  needs enable kprobes \nCONFIG_KSU_WITH_KPROBES=y \nCONFIG_HAVE_KPROBES=y \nCONFIG_KPROBE_EVENTS=y" >> arch/arm64/configs/gki_defconfig
               
     - name: Build kernel
       run: |
         cd project
         export PATH=$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc/bin:$PATH
         export ARCH=arm64
+        JOBS=$(( $(nproc --all) / 2 ))
         export SUBARCH=arm64
         export CFLAGS="-mno-outline-atomics"
         export CXXFLAGS="-mno-outline-atomics"
         make O=out CC=clang ARCH=arm64 SUBARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-  CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 gki_defconfig vendor/xiaomi_mt6895.config vendor/xaga.config
         make -j$(nproc --all) O=out CC=clang ARCH=arm64 SUBARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-  CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 TARGET_BUILD_VARIANT=user
-    
 
     
     - name: Upload the kernel zip
@@ -79,4 +108,4 @@ jobs:
       with:
         name: xaga_${{ env.BUILD_TIME}}
         path: |
-          /home/runner/work/My_KSU_Action/My_KSU_Action/project/out/arch/arm64/boot/*
+          ${GITHUB_WORKSPACE}/project/out/arch/arm64/boot/*
