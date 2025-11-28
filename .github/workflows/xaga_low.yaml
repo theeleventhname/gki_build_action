@@ -78,7 +78,6 @@ jobs:
       run: |
         cd project
         curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
-        ls ./
         cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/fs/* ./fs/
         cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/include/linux/* ./include/linux/
         cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch ./
@@ -98,7 +97,6 @@ jobs:
         cd project
         export PATH=$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc/bin:$PATH
         export ARCH=arm64
-        JOBS=$(( $(nproc --all) / 2 ))
         export SUBARCH=arm64
         export CFLAGS="-mno-outline-atomics"
         export CXXFLAGS="-mno-outline-atomics"
@@ -111,4 +109,4 @@ jobs:
       with:
         name: xaga_${{ env.BUILD_TIME}}
         path: |
-          ${GITHUB_WORKSPACE}/project/out/arch/arm64/boot/*
+          ${GITHUB_WORKSPACE}/project/out/arch/arm64/boot/Image
