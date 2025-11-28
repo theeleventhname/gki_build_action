@@ -1,4 +1,4 @@
-name: Build Xaga_low Kernel
+name: Build Xaga Sukisu Kernel
 
 on:
   workflow_dispatch:
