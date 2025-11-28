@@ -15,7 +15,7 @@ on:
       SUSFS_SOURCE:
         description: 'Susfs Source'
         required: true
-        default: 'ShirkNeko/susfs4ksu'
+        default: 'simonpunk/susfs4ksu'
       SUSFS_SOURCE_BRANCH:
         description: 'Branch'
         required: true
@@ -67,7 +67,7 @@ jobs:
     - name: Checkout Susfs Source
       uses: actions/checkout@v4
       with:
-        github-server-url: 'https://github.com'
+        github-server-url: 'https://gitlab.com'
         repository: ${{ env.SUSFS_SOURCE }}
         ref: ${{ env.SUSFS_SOURCE_BRANCH }}
         path: susfs
@@ -77,7 +77,7 @@ jobs:
     - name: Setup Patches
       run: |
         cd project
-        curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
+        curl -LSs "https://raw.githubusercontent.com/rsuntk/KernelSU/main/kernel/setup.sh"  | bash -s susfs-rksu-master
         ls ./
         cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/fs/* ./fs/
         cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/include/linux/* ./include/linux/
@@ -87,7 +87,6 @@ jobs:
         dos2unix drivers/input/touchscreen/goodix_9916/Kconfig
         sed -i 's/-dirty//g' scripts/setlocalversion
         patch -p1 < 50_add_susfs_in_gki-android12-5.10.patch
-        ls ./
         echo -e "CONFIG_KSU=y \n# CONFIG_KSU_DEBUG is not set \n# CONFIG_KSU_ALLOWLIST_WORKAROUND is not set \nCONFIG_KSU_SUSFS=y \nCONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y \nCONFIG_KSU_SUSFS_SUS_SU=y \nCONFIG_KSU_SUSFS_SUS_PATH=y \nCONFIG_KSU_SUSFS_SUS_MAP=y \nCONFIG_KSU_SUSFS_SUS_MOUNT=y \nCONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y \nCONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y \nCONFIG_KSU_SUSFS_SUS_KSTAT=y \n# CONFIG_KSU_SUSFS_SUS_OVERLAYFS is not set \nCONFIG_KSU_SUSFS_TRY_UMOUNT=y \nCONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y \nCONFIG_KSU_SUSFS_SPOOF_UNAME=y \nCONFIG_KSU_SUSFS_ENABLE_LOG=y \nCONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y \nCONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y \nCONFIG_KSU_SUSFS_OPEN_REDIRECT=y \n# gki  needs enable kprobes \nCONFIG_KSU_WITH_KPROBES=y \nCONFIG_HAVE_KPROBES=y \nCONFIG_KPROBE_EVENTS=y" >> arch/arm64/configs/gki_defconfig
               
     - name: Build kernel
@@ -108,4 +107,4 @@ jobs:
       with:
         name: xaga_${{ env.BUILD_TIME}}
         path: |
-          ${GITHUB_WORKSPACE}/project/out/arch/arm64/boot/*
+          /home/runner/work/gki_build_action/gki_build_action/project/out/arch/arm64/boot/Image.gz
