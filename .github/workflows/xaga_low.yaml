@@ -108,4 +108,4 @@ jobs:
       with:
         name: xaga_${{ env.BUILD_TIME}}
         path: |
-          /home/runner/work/My_KSU_Action/My_KSU_Action/project/out/arch/arm64/boot/*
+          ${GITHUB_WORKSPACE}/project/out/arch/arm64/boot/*
