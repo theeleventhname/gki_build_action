@@ -1,4 +1,4 @@
-name: Build Xaga Original Kernel
+name: Build Xaga Rsuntk Kernel
 
 on:
   workflow_dispatch:
