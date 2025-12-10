@@ -69,8 +69,9 @@ jobs:
         #sed -i '/^#define MAX.*/a#endif' include/linux/minmax.h
         sed -i 's/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/char/rpmb/rpmb-mtk.c
         sed -i 's/^#define MAX(a, b)			((a) >= (b) ? (a) : (b))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/misc/mediatek/swpm/inc/swpm_module.h
-        sed -i 's/^##define MAX(a, b)			((a) >= (b) ? (a) : (b))$/#define MAX(a, b) __cmp(max, a, b)/' drivers/misc/mediatek/swpm/inc/swpm_module.h
-        
+        sed -i 's/^#define MAX(a, b)			((a) >= (b) ? (a) : (b))$/#define MAX(a, b) __cmp(max, a, b)/' drivers/misc/mediatek/swpm/inc/swpm_module.h
+        sed -i 's/^#define MIN(x, y)	((x) < (y) ? (x) : (y))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/mali_malisw.h
+        sed -i 's/^#define MAX(x, y)	((x) < (y) ? (y) : (x))$/#define MAX(a, b) __cmp(max, a, b)/' drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/mali_malisw.h
     - name: Build kernel
       run: |
         cd project
