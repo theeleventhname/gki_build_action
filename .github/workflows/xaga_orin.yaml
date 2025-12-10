@@ -63,8 +63,8 @@ jobs:
         #sed -i '/^#define MIN.*/a#endif' include/linux/minmax.h
         #sed -i '/^#define MAX.*/i#ifndef MAX' include/linux/minmax.h
         #sed -i '/^#define MAX.*/a#endif' include/linux/minmax.h
-        sed -i 's/^#define MIN(a, b) __cmp(min, a, b)$/#define MIN(a, b) (((a) < (b)) ? (a) : (b))/' include/linux/minmax.h
-        sed -i 's/^#define MAX(a, b) __cmp(max, a, b)$/#define MAX(a, b) ((a) >= (b) ? (a) : (b))/' include/linux/minmax.h
+        sed -i '/^#define MIN(a, b) __cmp(min, a, b)$/d' include/linux/minmax.h
+        sed -i '/^#define MAX(a, b) __cmp(max, a, b)$/d' include/linux/minmax.h
         
         
     - name: Build kernel
