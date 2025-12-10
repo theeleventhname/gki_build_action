@@ -67,9 +67,9 @@ jobs:
         #sed -i '/^#define MAX(a, b) __cmp(max, a, b)$/d' include/linux/minmax.h
         #sed -i '/^#define MAX.*/i#ifndef MAX' include/linux/minmax.h
         #sed -i '/^#define MAX.*/a#endif' include/linux/minmax.h
-        sed -i 's/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/#ifndef MIN\n#define MIN(a, b) (((a) < (b)) ? (a) : (b))\n#endif/' drivers/char/rpmb/rpmb-mtk.c
-        sed -i 's/^#define MIN(a, b)                       ((a) >= (b) ? (b) : (a))$/#ifndef MIN\n#define MIN(a, b) (((a) < (b)) ? (a) : (b))\n#endif/' drivers/misc/mediatek/swpm/inc/swpm_module.h
-        
+        sed -i 's/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/char/rpmb/rpmb-mtk.c
+        sed -i 's/^#define MIN(a, b)                       ((a) >= (b) ? (b) : (a))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/misc/mediatek/swpm/inc/swpm_module.h
+        sed -i 's/^#define MAX(a, b)                       ((a) >= (b) ? (a) : (b))$/#define MAX(a, b) __cmp(max, a, b)/' drivers/misc/mediatek/swpm/inc/swpm_module.h
         
     - name: Build kernel
       run: |
