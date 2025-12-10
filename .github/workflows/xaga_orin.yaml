@@ -55,7 +55,11 @@ jobs:
         path: project
         submodules: recursive
         fetch-depth: 1
-                  
+        
+    - name: Change kernel
+      run: |      
+        cd project
+        sed -i 's/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/char/rpmb/rpmb-mtk.c
     - name: Build kernel
       run: |
         cd project
