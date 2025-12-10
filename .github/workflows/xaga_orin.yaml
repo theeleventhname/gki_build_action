@@ -67,14 +67,23 @@ jobs:
         #sed -i '/^#define MAX(a, b) __cmp(max, a, b)$/d' include/linux/minmax.h
         #sed -i '/^#define MAX.*/i#ifndef MAX' include/linux/minmax.h
         #sed -i '/^#define MAX.*/a#endif' include/linux/minmax.h
-        sed -i 's/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/char/rpmb/rpmb-mtk.c
-        sed -i 's/^#define MIN(a, b)			((a) >= (b) ? (b) : (a))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/misc/mediatek/swpm/inc/swpm_module.h
-        sed -i 's/^#define MAX(a, b)			((a) >= (b) ? (a) : (b))$/#define MAX(a, b) __cmp(max, a, b)/' drivers/misc/mediatek/swpm/inc/swpm_module.h
-        sed -i 's/^#define MIN(x, y)	((x) < (y) ? (x) : (y))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/mali_malisw.h
-        sed -i 's/^#define MAX(x, y)	((x) < (y) ? (y) : (x))$/#define MAX(a, b) __cmp(max, a, b)/' drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/mali_malisw.h
-        #sed -i 's/^#define in_range(c, lo, up) ((int)c >= lo && (int)c <= up)$/#define in_range(val, start, len)/' drivers/misc/mediatek/connectivity/wlan/core/gen4m/include/nan/wpa_supp/FourWayHandShake.h
-        sed -i 's/^#define MIN(x, y) ((x) < (y) ? (x) : (y))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/input/misc/aw8697_haptic/ringbuffer.h
-        #sed -i 's/^#define in_range(c, lo, up) ((int)c >= lo && (int)c <= up)$/#define in_range(val, start, len)/' drivers/misc/mediatek/connectivity/wlan/core/gen4m/include/nan/wpa_supp/FourWayHandShake.h
+        
+        #sed -i 's/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/char/rpmb/rpmb-mtk.c
+        #sed -i 's/^#define MIN(a, b)			((a) >= (b) ? (b) : (a))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/misc/mediatek/swpm/inc/swpm_module.h
+        #sed -i 's/^#define MAX(a, b)			((a) >= (b) ? (a) : (b))$/#define MAX(a, b) __cmp(max, a, b)/' drivers/misc/mediatek/swpm/inc/swpm_module.h
+        #sed -i 's/^#define MIN(x, y)	((x) < (y) ? (x) : (y))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/mali_malisw.h
+        #sed -i 's/^#define MAX(x, y)	((x) < (y) ? (y) : (x))$/#define MAX(a, b) __cmp(max, a, b)/' drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/mali_malisw.h
+        #sed -i 's/^#define MIN(x, y) ((x) < (y) ? (x) : (y))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/input/misc/aw8697_haptic/ringbuffer.h
+        #sed -i '/^#define in_range(c, lo, up) ((int)c >= lo && (int)c <= up)$/d' drivers/misc/mediatek/connectivity/wlan/core/gen4m/include/nan/wpa_supp/FourWayHandShake.h
+        #sed -i '/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/d' drivers/misc/mediatek/connectivity/bt/mt66xx/include/btmtk_define.h
+        #sed -i '/^#define MAX(a, b) (((a) > (b)) ? (a) : (b))$/d' drivers/misc/mediatek/connectivity/bt/mt66xx/include/btmtk_define.h
+        
+        sed -i '/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/d' drivers/char/rpmb/rpmb-mtk.c
+        sed -i '/^#define MIN(a, b)			((a) >= (b) ? (b) : (a))$/d' drivers/misc/mediatek/swpm/inc/swpm_module.h
+        sed -i '/^#define MAX(a, b)			((a) >= (b) ? (a) : (b))$/d' drivers/misc/mediatek/swpm/inc/swpm_module.h
+        sed -i '/^#define MIN(x, y) ((x) < (y) ? (x) : (y))$/d' drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/mali_malisw.h
+        sed -i '/^#define MAX(x, y)	((x) < (y) ? (y) : (x))$/d' drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/mali_malisw.h
+        sed -i '/^#define MIN(x, y) ((x) < (y) ? (x) : (y))$/d' drivers/input/misc/aw8697_haptic/ringbuffer.h
         sed -i '/^#define in_range(c, lo, up) ((int)c >= lo && (int)c <= up)$/d' drivers/misc/mediatek/connectivity/wlan/core/gen4m/include/nan/wpa_supp/FourWayHandShake.h
         sed -i '/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/d' drivers/misc/mediatek/connectivity/bt/mt66xx/include/btmtk_define.h
         sed -i '/^#define MAX(a, b) (((a) > (b)) ? (a) : (b))$/d' drivers/misc/mediatek/connectivity/bt/mt66xx/include/btmtk_define.h
