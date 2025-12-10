@@ -11,15 +11,7 @@ on:
       KERNEL_SOURCE_BRANCH:
         description: 'Branch'
         required: true
-        default: 'lineage-23.0'      
-      SUSFS_SOURCE:
-        description: 'Susfs Source'
-        required: true
-        default: 'ShirkNeko/susfs4ksu'
-      SUSFS_SOURCE_BRANCH:
-        description: 'Branch'
-        required: true
-        default: 'gki-android12-5.10'     
+        default: 'lineage-23.0'        
 
 jobs:
   build:
@@ -61,16 +53,6 @@ jobs:
         repository: ${{ env.KERNEL_SOURCE }}
         ref: ${{ env.KERNEL_SOURCE_BRANCH }}
         path: project
-        submodules: recursive
-        fetch-depth: 1
-
-    - name: Checkout Susfs Source
-      uses: actions/checkout@v4
-      with:
-        github-server-url: 'https://github.com'
-        repository: ${{ env.SUSFS_SOURCE }}
-        ref: ${{ env.SUSFS_SOURCE_BRANCH }}
-        path: susfs
         submodules: recursive
         fetch-depth: 1
                   
