@@ -59,10 +59,12 @@ jobs:
     - name: Change kernel
       run: |      
         cd project
-        sed -i '/^#define MIN.*__cmp(min, a, b)/i#ifndef MIN' include/linux/minmax.h
-        sed -i '/^#define MIN.*__cmp(min, a, b)/a#endif' include/linux/minmax.h
-        sed -i '/^#define MAX.*__cmp(max, a, b)/i#ifndef MAX' include/linux/minmax.h
-        sed -i '/^#define MAX.*__cmp(max, a, b)/a#endif' include/linux/minmax.h
+        #sed -i '/^#define MIN.*/i#ifndef MIN' include/linux/minmax.h
+        #sed -i '/^#define MIN.*/a#endif' include/linux/minmax.h
+        #sed -i '/^#define MAX.*/i#ifndef MAX' include/linux/minmax.h
+        #sed -i '/^#define MAX.*/a#endif' include/linux/minmax.h
+        sed -i 's/^#define MIN(a, b) __cmp(min, a, b)$/#define MIN(a, b) (((a) < (b)) ? (a) : (b))/' include/linux/minmax.h
+        sed -i 's/^#define MAX(a, b) __cmp(max, a, b)$/#define MAX(a, b) ((a) >= (b) ? (a) : (b))/' include/linux/minmax.h
         
         
     - name: Build kernel
