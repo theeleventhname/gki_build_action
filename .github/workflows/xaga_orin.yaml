@@ -73,6 +73,7 @@ jobs:
         sed -i 's/^#define MIN(x, y)	((x) < (y) ? (x) : (y))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/mali_malisw.h
         sed -i 's/^#define MAX(x, y)	((x) < (y) ? (y) : (x))$/#define MAX(a, b) __cmp(max, a, b)/' drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/mali_malisw.h
         sed -i 's/^#define in_range(c, lo, up) ((int)c >= lo && (int)c <= up)$/#define in_range(val, start, len)/' drivers/misc/mediatek/connectivity/wlan/core/gen4m/include/nan/wpa_supp/FourWayHandShake.h
+        sed -i 's/^#define MIN(x, y) ((x) < (y) ? (x) : (y))$/#define MIN(a, b) __cmp(min, a, b)/' drivers/input/misc/aw8697_haptic/ringbuffer.h
     - name: Build kernel
       run: |
         cd project
