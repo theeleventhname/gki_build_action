@@ -1,13 +1,12 @@
 {
-  "kernel": "esk",
-  "kernelsu": "sukisu",
-  "hook_method": "manual",
+  "kernelsu": "rksu",
   "better_net": "true",
   "zram": "true",
   "rekernel_enable": "true",
-  "susfs": "false",
+  "susfs": "true",
+  "ssg": "true",
   "lxc_enable": "false",
   "stock_config": "false",
   "baseband_guard": "true",
-  "out": "ak3-5.10_esk_sukisu.zip"
+  "key": "ak3-5.10_esk_rksu_susfs"
 }

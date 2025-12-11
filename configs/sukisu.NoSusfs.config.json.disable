@@ -1,13 +1,12 @@
 {
-  "kernel": "ztc",
-  "kernelsu": "rksu",
-  "hook_method": "manual",
+  "kernelsu": "sukisu",
   "better_net": "true",
   "zram": "true",
   "rekernel_enable": "true",
   "susfs": "false",
+  "ssg": "true",
   "lxc_enable": "false",
   "stock_config": "false",
   "baseband_guard": "true",
-  "out": "ak3-5.10_ztc_rksu.zip"
+  "key": "ak3-5.10_esk_sukisu"
 }

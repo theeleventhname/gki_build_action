@@ -10,14 +10,13 @@ API_HASH = "d524b414d21f4d37f08684c1df41ac9c"
 
 BETTER_NET = os.environ.get("BETTER_NET")
 REKERNEL = os.environ.get("REKERNEL")
-KERNEL = os.environ.get("KERNEL")
 KERNELSU = os.environ.get("KERNELSU")
 BBG = os.environ.get("BBG")
 LXC = os.environ.get("LXC")
 SUSFS = os.environ.get("SUSFS")
-HOOKS = os.environ.get("HOOKS")
 KERNEL = os.environ.get("KERNEL")
 ZRAM = os.environ.get("ZRAM")
+SSG = os.environ.get("SSG")
 STOCK_CONFIG = os.environ.get("STOCK_CONFIG")
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
@@ -26,15 +25,14 @@ RUN_URL = os.environ.get("RUN_URL")
 BOT_CI_SESSION = os.environ.get("BOT_CI_SESSION")
 MSG_TEMPLATE = """
 ```
-kernel source: {kernel}
 root impl: {kernelsu}
+ssg io: {ssg}
 stock config: {stock_config}
 rekernel status: {rekernel}
 lxc support status: {lxc}
 BBG: {bbg}
 better_net status: {better_net}
 susfs status: {susfs}
-hook type: {hooks}
 more ZRAM: {zram}
 ```
 [Workflow run]({run_url})
@@ -43,19 +41,19 @@ more ZRAM: {zram}
 
 def get_caption():
     msg = MSG_TEMPLATE.format(
-        kernel=KERNEL,
         kernelsu=KERNELSU,
+        ssg=SSG,
         stock_config=STOCK_CONFIG,
         rekernel=REKERNEL,
         lxc=LXC,
         bbg=BBG,
         better_net=BETTER_NET,
         susfs=SUSFS,
-        hooks=HOOKS,
         zram=ZRAM,
         run_url=RUN_URL,
     )
     return msg
+
 
 async def send_telegram_message(file_path: str):
     async with TelegramClient(StringSession(BOT_CI_SESSION), api_id=API_ID, api_hash=API_HASH) as client:
