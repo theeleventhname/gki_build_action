@@ -23,7 +23,7 @@ on:
       ENABLE_KPM:
         description: 'KPM OPTION'
         required: true
-        default: 'true'
+        default: 'false'
       ENABLE_VFS:
         description: 'VFS OPTION'
         required: false
@@ -147,6 +147,36 @@ jobs:
           rm -f Image
           mv oImage Image
         fi
+
+    - name: Make AnyKernel3
+      run: |
+          git clone https://github.com/Kernel-SU/AnyKernel3.git --depth=1
+          rm -rf ./AnyKernel3/.git
+          mkdir -p kernel_workspace/kernel_platform/out/Final-Image-Find/
+          image_path=$(find "/home/runner/work/gki_build_action/gki_build_action/project/out/arch/arm64/boot/" -name "Image" | head -n 1)
+          if [ -n "$image_path" ]; then
+            echo "使用 make 编译的统一路径，成功找到 Image 文件"
+          else
+            image_path=$(find "/home/runner/work/gki_build_action/gki_build_action/project/out/arch/arm64/boot/" -name "Image" | head -n 1)
+            if [ -n "$image_path" ]; then
+              echo "使用官方脚本编译，成功找到 Image 文件"
+            else
+              echo "未找到 Image 文件，构建失败" >&2
+              exit 1
+            fi
+          fi
+          if [ -n "$image_path" ] && [ -f "$image_path" ]; then
+            echo "Image file finally located at: $image_path"
+            cp "$image_path" ./AnyKernel3/Image
+            cp "$image_path" kernel_workspace/kernel_platform/out/Final-Image-Find/Image
+          fi
+
+    - name: Upload ak3 kernel zip
+      uses: actions/upload-artifact@v4
+      with:
+        name: xaga_sukisu+susfs-ak3_${{ env.BUILD_TIME}}
+        path: |
+          ./AnyKernel3/*
           
     - name: Upload the kernel zip
       uses: actions/upload-artifact@v4
