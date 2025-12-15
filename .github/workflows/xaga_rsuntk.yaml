@@ -21,9 +21,9 @@ on:
         required: true
         default: 'gki-android12-5.10'     
       TEMP_OPTION:
-        description: 'Kernel untested'
+        description: 'Kernel tested'
         required: false
-        default: 'false'
+        default: 'true'
 
 jobs:
   build:
@@ -97,7 +97,7 @@ jobs:
     - name: Change kernel
       run: |      
         cd project
-        if [[ "${{ env.TEMP_OPTION }}" == "true" ]];then
+        if [[ "${{ env.TEMP_OPTION }}" == "false" ]];then
           sed -i '/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/d' drivers/char/rpmb/rpmb-mtk.c
           sed -i '/^#define MIN(a, b)			((a) >= (b) ? (b) : (a))$/d' drivers/misc/mediatek/swpm/inc/swpm_module.h
           sed -i '/^#define MAX(a, b)			((a) >= (b) ? (a) : (b))$/d' drivers/misc/mediatek/swpm/inc/swpm_module.h
