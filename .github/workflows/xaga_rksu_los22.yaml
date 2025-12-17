@@ -123,7 +123,7 @@ jobs:
           \t/* Do nothing */\
           \treturn 0;\
           #endif\
-          }' KernelSU/ksud.c
+          }' KernelSU/kernel/ksud.c
         fi
     
     - name: Build kernel
