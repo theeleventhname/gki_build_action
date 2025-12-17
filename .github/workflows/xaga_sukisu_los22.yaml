@@ -1,4 +1,4 @@
-name: Build Xaga Sukisu Kernel
+name: Build Xaga Sukisu Kernel For Los22.2
 
 on:
   workflow_dispatch:
