@@ -181,7 +181,7 @@ jobs:
     - name: Upload ak3 kernel zip
       uses: actions/upload-artifact@v4
       with:
-        name: xaga_sukisu+susfs-ak3_${{ env.BUILD_TIME}}
+        name: xaga_ksun+susfs-ak3_${{ env.BUILD_TIME}}
         path: |
           ./AnyKernel3/*
           
