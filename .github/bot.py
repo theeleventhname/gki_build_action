@@ -12,8 +12,6 @@ BETTER_NET = os.environ.get("BETTER_NET")
 REKERNEL = os.environ.get("REKERNEL")
 BBG = os.environ.get("BBG")
 LXC = os.environ.get("LXC")
-KERNEL = os.environ.get("KERNEL")
-ZRAM = os.environ.get("ZRAM")
 SSG = os.environ.get("SSG")
 STOCK_CONFIG = os.environ.get("STOCK_CONFIG")
 
@@ -22,9 +20,7 @@ CHAT_ID = int(os.environ.get("CHAT_ID"))
 RUN_URL = os.environ.get("RUN_URL")
 BOT_CI_SESSION = os.environ.get("BOT_CI_SESSION")
 MSG_TEMPLATE = """
-```
 **New Build Published!**
-#ESK #GKI2
 ```Kernel Info
 kernelver: {kernelversion}
 stock: {stock}
@@ -34,12 +30,11 @@ BBG: {bbg}
 Re:Kernel: {rekernel}
 Mountify support: true
 lxc/docker support {lxc}
-lz4+zstd: {zram}
 SSG speed controller: {ssg}
 better net support: {better_net}
 ```
 Please follow @@esk_gki_build !
-
+#GKI2 #ESK
 [Workflow run]({run_url})
 """.strip()
 
@@ -54,7 +49,6 @@ def get_caption():
         lxc=LXC,
         bbg=BBG,
         better_net=BETTER_NET,
-        zram=ZRAM,
         run_url=RUN_URL,
     )
     return msg
@@ -65,9 +59,7 @@ def get_kernel_versions():
     sublevel=""
 
     try:
-        current_work=os.getcwd()
-        os.chdir(current_work+"/kernel_workspace/common")
-        with open("./Makefile",'r') as file:
+        with open("./kernel_workspace/common/Makefile",'r') as file:
             for line in file:
                 if line.startswith("VERSION"):
                     version = line.split('=')[1].strip()
@@ -87,6 +79,7 @@ def get_ksu_versions():
     current_work=os.getcwd()
     os.chdir(current_work+"/kernel_workspace/common/KernelSU")
     ksuver=os.popen("echo $(git describe --tags $(git rev-list --tags --max-count=1))-$(git rev-parse --short HEAD)@$(git branch --show-current)").read().strip()
+    os.chdir(current_work)
     return ksuver
 
 async def send_telegram_message(file_path: str):

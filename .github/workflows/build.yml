@@ -43,7 +43,6 @@ jobs:
       SSG: ${{ matrix.CONFIG.ssg }}
       BBG: ${{ matrix.CONFIG.baseband_guard }}
       BETTER_NET: ${{ matrix.CONFIG.better_net }}
-      ZRAM: ${{ matrix.CONFIG.zram }}
       KEY: ${{ matrix.CONFIG.key }}
     steps:
       - name: 安装配置环境依赖
@@ -117,9 +116,9 @@ jobs:
         id: ksu_version
         run: |
           # 进入内核工作目录
-          cd kernel_workspace
+          cd kernel_workspace/common
           if [[ "${{ env.KERNELSU }}" == "true" ]]; then
-            curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s builtin
+            curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s main
           fi
 
       - name: 启用stock config
@@ -129,25 +128,6 @@ jobs:
             echo "下载相关文件"
             curl -LSs https://raw.githubusercontent.com/Tools-cx-app/gki_build_action/main/patches/stock_config.patch -o stock_config.patch
             patch -p1 --fuzz=3 < stock_config.patch
-          fi
-
-      - name: 添加lz4等zram压缩算法
-        run: |
-          if [[ "${{ env.ZRAM }}" == "true" ]]; then
-            cd kernel_workspace
-            cp -r ./SukiSU_patch/other/zram/lz4k/include/linux/* ./common/include/linux/
-            cp -r ./SukiSU_patch/other/zram/lz4k/lib/* ./common/lib/
-            cp -r ./SukiSU_patch/other/zram/lz4k/crypto/* ./common/crypto/
-            cp -r ./SukiSU_patch/other/zram/lz4k_oplus ./common/lib/
-
-            cp ./SukiSU_patch/other/zram/zram_patch/5.10/lz4kd.patch ./common
-            cp ./SukiSU_patch/other/zram/zram_patch/5.10/lz4k_oplus.patch ./common
-          
-            echo "正在打补丁"
-            cd common
-            patch -p1 -F 3 < lz4kd.patch || true
-            patch -p1 -F 3 < lz4k_oplus.patch || true
-            echo '完成补丁'
           fi
 
       - name: 添加Re:Kernel
@@ -373,7 +353,6 @@ jobs:
           LXC: ${{ env.LXC }}
           BBG: ${{ env.BBG }}
           BETTER_NET: ${{ env.BETTER_NET }}
-          ZRAM: ${{ env.ZRAM }}
         run: |
           if [ -z ${{ secrets.BOT_TOKEN }} ]; then
             exit 0
