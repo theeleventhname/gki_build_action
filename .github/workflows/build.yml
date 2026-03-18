@@ -8,44 +8,65 @@ env:
 
 on:
   workflow_dispatch:
+    inputs:
+      kernelsu:
+        description: '是否包含kernelsu(builtin)'
+        required: true
+        type: boolean
+        default: true
+      stock_config:
+        description: '是否伪装defconfig为原厂defconfig'
+        required: true
+        type: boolean
+        default: false
+      rekernel:
+        description: '是否启用Re-Kernel支持(与Freezer/NoActive等软件配合, 提升应用冻结能力)'
+        required: true
+        type: boolean
+        default: true
+      better_net:
+        description: '是否开启网络功能拓展配置(用于为ipset及需要iptables等高级网络功能内核支持的程序提供支持)'
+        required: true
+        type: boolean
+        default: false
+      ssg:
+        description: '是否启用SSG IO调度器支持(提升IO读写性能)'
+        required: true
+        type: boolean
+        default: false
+      lxc:
+        description: '是否启用lxc支持(部分设备可能不开机)'
+        required: true
+        type: boolean
+        default: false
+      baseband_guard:
+        description: '是否开启内核级基带保护(阻止一切对非用户分区的写入，有效防止格机)'
+        required: true
+        type: boolean
+        default: true
+      tmpfs:
+        description: '是否开启对于mountify 的支持'
+        required: true
+        type: boolean
+        default: true
+      ccache_update:
+        description: '更新ccache缓存(将本次编译生成的ccache缓存覆盖至仓库缓存，在更改编译配置、源码或需要刷新缓存时开启)'
+        required: true
+        type: boolean
+        default: false
+      ccache_debug:
+        description: '是否上传 Ccache调试日志(用于调试, 无需要不必开启)'
+        required: true
+        type: boolean
+        default: false
+
 
 jobs:
-  read:
-    name: Parse *.config.json
-    runs-on: ubuntu-latest
-    outputs:
-      CONFIGS: ${{ steps.generate-matrix.outputs.CONFIGS }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Generate Matrix
-        id: generate-matrix
-        run: |
-          echo "CONFIGS<<EOF" >> $GITHUB_OUTPUT
-          jq -s '[.[]]' configs/*.config.json >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
   build:
     runs-on: ubuntu-latest
-    needs:
-      - read
-    strategy:
-      max-parallel: 4
-      fail-fast: false
-      matrix:
-        CONFIG: ${{ fromJSON(needs.read.outputs.CONFIGS) }}
-    env:
-      KERNELSU: ${{ matrix.CONFIG.kernelsu }}
-      REKERNEL: ${{ matrix.CONFIG.rekernel_enable }}
-      STOCK_CONFIG: ${{ matrix.CONFIG.stock_config }}
-      LXC: ${{ matrix.CONFIG.lxc_enable }}
-      SSG: ${{ matrix.CONFIG.ssg }}
-      MOUNTIFY: ${{ matrix.CONFIG.mountify}}
-      BBG: ${{ matrix.CONFIG.baseband_guard }}
-      BETTER_NET: ${{ matrix.CONFIG.better_net }}
-      KEY: ${{ matrix.CONFIG.key }}
-      DEBUG: ${{ matrix.CONFIG.debug }}
+    permissions:
+      actions: write
+      contents: read
     steps:
       - name: 安装配置环境依赖
         run: |
@@ -58,49 +79,7 @@ jobs:
             curl bison flex make binutils git perl gcc python3 \
             python-is-python3 bc libssl-dev libelf-dev \
             bc aria2 zip unzip ccache binutils-aarch64-linux-gnu
-
-      - name: 配置ccache目录
-        run: |
-          echo "CCACHE_DIR=$HOME/.ccache_${{ env.KERNEL_VERSION }}" >> $GITHUB_ENV
-          echo "CCACHE_MAXSIZE=3G" >> $GITHUB_ENV
-          echo "当前磁盘空间："
-          df -h
-          echo "当前构建内核版本：${{ env.KERNEL_VERSION }}"
-
-      - name: 载入当前版本内核的 ccache缓存
-        uses: actions/cache@v4
-        id: ccache-restore
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ccache-esk-${{ env.KERNEL_VERSION }}-${{ env.KEY }}
-          restore-keys: |
-            ccache-esk-${{ env.KERNEL_VERSION }}-${{ env.KEY }}
-            ccache-esk--
-
-      - name: 初始化并配置 ccache
-        run: |
-          export CCACHE_COMPILERCHECK="none"
-          export CCACHE_BASEDIR="${{ github.workspace }}"
-          export CCACHE_NOHASHDIR="true"
-          export CCACHE_HARDLINK="true"
-          export CCACHE_DIR="${{ env.CCACHE_DIR }}"
-          export CCACHE_MAXSIZE="${{ env.CCACHE_MAXSIZE }}"
-          
-          mkdir -p "$CCACHE_DIR"
-          
-          echo "配置ccache缓存大小为: $CCACHE_MAXSIZE"
-          ccache -M "$CCACHE_MAXSIZE"
-          ccache -o compression=true
-          
-          echo "ccache初始状态:"
-          ccache -s
-          
-          # 如果缓存恢复命中，显示详细信息
-          if [ "${{ steps.ccache-restore.outputs.cache-hit }}" == 'true' ]; then
-            echo "ccache缓存命中详情:"
-            ccache -sv
-          fi
-
+      
       - name: 初始化源码仓库及llvm-Clang工具链
         run: |
           mkdir -p kernel_workspace
@@ -131,132 +110,181 @@ jobs:
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
           done
 
+      - name: Fetch config script
+        run: |
+          curl -fLSs "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/config.sh" -o /tmp/config.sh
+          chmod +x /tmp/config.sh
+          
+      - name: 配置ccache目录
+        run: |
+          echo "CCACHE_DIR=$HOME/.ccache_${{ env.KERNEL_VERSION }}" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=3G" >> $GITHUB_ENV
+          echo "当前磁盘空间："
+          df -h
+          echo "当前构建内核版本：${{ env.KERNEL_VERSION }}"
+
+      - name: 载入当前版本内核的 ccache缓存
+        uses: actions/cache@v4
+        id: ccache-restore
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-esk-${{ env.KERNEL_VERSION }}
+          restore-keys: |
+            ccache-esk-${{ env.KERNEL_VERSION }}
+
+
+      - name: 清除旧 ccache 缓存
+        if: inputs.ccache_update
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "正在清除仓库中的旧 ccache 缓存..."
+          if gh cache delete ccache-esk-${{ env.KERNEL_VERSION }} -R ${{ github.repository }}; then
+            echo "成功删除旧的 ccache 缓存！"
+          else
+            echo "旧缓存不存在或已被清理！"
+          fi
+
+      - name: 初始化并配置 ccache
+        run: |
+          export CCACHE_COMPILERCHECK="none"
+          export CCACHE_BASEDIR="${{ github.workspace }}"
+          export CCACHE_NOHASHDIR="true"
+          export CCACHE_HARDLINK="true"
+          export CCACHE_DIR="${{ env.CCACHE_DIR }}"
+          export CCACHE_MAXSIZE="${{ env.CCACHE_MAXSIZE }}"
+          
+          mkdir -p "$CCACHE_DIR"
+          
+          echo "配置ccache缓存大小为: $CCACHE_MAXSIZE"
+          ccache -M "$CCACHE_MAXSIZE"
+          ccache -o compression=true
+          
+          echo "ccache初始状态:"
+          ccache -s
+          
+          # 如果缓存恢复命中，显示详细信息
+          if [ "${{ steps.ccache-restore.outputs.cache-hit }}" == true ]; then
+            echo "ccache缓存命中详情:"
+            ccache -sv
+          fi
+
       - name: 添加KernelSU
         id: ksu_version
         run: |
           # 进入内核工作目录
           cd kernel_workspace/common
-          if [[ "${{ env.KERNELSU }}" == "true" ]]; then
-            curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s main
-          fi
+          curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s main
 
       - name: 启用stock config
+        if: inputs.stock_config
         run: |
-          if [[ "${{ env.STOCK_CONFIG }}" == "true" ]]; then
-            cd kernel_workspace/common
-            echo "下载相关文件"
-            curl -LSs https://raw.githubusercontent.com/Tools-cx-app/gki_build_action/main/patches/stock_config.patch -o stock_config.patch
-            patch -p1 --fuzz=3 < stock_config.patch
-          fi
+          cd kernel_workspace/common
+          echo "下载相关文件"
+          curl -fLSs "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/patches/stock_config.patch" -o stock_config.patch
+          patch -p1 --fuzz=3 < stock_config.patch
 
       - name: 添加Re:Kernel
+        if: inputs.rekernel
         run: |
-          if [[ "${{ env.REKERNEL }}" == "true" ]]; then
-            echo "CONFIG_REKERNEL=y" >> "kernel_workspace/common/arch/arm64/configs/gki_defconfig"
-            echo "CONFIG_REKERNEL_NETWORK=y" >> "kernel_workspace/common/arch/arm64/configs/gki_defconfig"
-          fi
+          source /tmp/config.sh
+          config --enable CONFIG_REKERNEL
+          config --enable CONFIG_REKERNEL_NETWORK
           
 
-      - name: 添加SSG IO调速器
+      - name: Config SSG I/O scheduler
+        if: ${{ !inputs.ssg }}
         run: |
-          if [[ "${{ env.SSG }}" == "true" ]]; then
-            echo "正在启用三星SSG IO调度器"
-            cd kernel_workspace
-            echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
+          echo "Disabling SSG I/O scheduler"
+          source /tmp/config.sh
+          config --disable CONFIG_MQ_IOSCHED_SSG
+          config --disable CONFIG_MQ_IOSCHED_SSG_CGROUP
+          config --disable CONFIG_MQ_SSG_DEFAULT
           
       - name: 添加lxc
+        if: inputs.lxc
         run: |
-          if [[ "${{ env.LXC }}" == "true" ]]; then
-            cd kernel_workspace/common
-            echo "下载相关文件"
-            curl -LSs https://raw.githubusercontent.com/Tools-cx-app/gki_build_action/main/patches/lxc.patch -o lxc.patch
-            echo "开始patch"
-            if [ -e "drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/context/mali_kbase_context.c" ]; then
-              patch -p1 --forward --fuzz=3 < lxc.patch
-            else
-              sed -i '/^diff --git.*mali_kbase_context\.c$/,/^diff --git/{
-                /^diff --git/!d
-              }'  lxc.patch
-              patch -p1 --forward --fuzz=3 < lxc.patch
-            fi
+          cd kernel_workspace/common
+          echo "下载相关文件"
+          curl -fLSs "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/patches/lxc.patch" -o lxc.patch
+          echo "开始patch"
+          if [ -e "drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/context/mali_kbase_context.c" ]; then
+            patch -p1 --forward --fuzz=3 < lxc.patch
+          else
+            sed -i '/^diff --git.*mali_kbase_context\.c$/,/^diff --git/{
+              /^diff --git/!d
+            }'  lxc.patch
+            patch -p1 --forward --fuzz=3 < lxc.patch
           fi
           
       - name: 添加 KSU 配置项
+        if: inputs.kernelsu
         run: |
-          cd kernel_workspace
-          if [[ "${{ env.KERNELSU }}" != "true" ]]; then
-            exit
-          fi
-          echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
+          source /tmp/config.sh
+          config --enable CONFIG_KSU
           echo "正在开启manual钩子..."
-          echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_MANUAL_HOOK_AUTO_SETUID_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_MANUAL_HOOK_AUTO_INITRC_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_MANUAL_HOOK_AUTO_INPUT_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          config --enable CONFIG_KSU_MANUAL_HOOK
+          config --enable CONFIG_KSU_MANUAL_HOOK_AUTO_SETUID_HOOK
+          config --enable CONFIG_KSU_MANUAL_HOOK_AUTO_INITRC_HOOK
+          config --enable CONFIG_KSU_MANUAL_HOOK_AUTO_INPUT_HOOK
 
       - name: 支持mountify/hybrid的tmpfs模式
+        if: inputs.tmpfs
         run: |
-          cd kernel_workspace
-          if [[ "${{ env.MOUNTIFY }}" == "true" ]]; then
-            #添加对 Mountify (backslashxx/mountify) 模块的支持
-            echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
+          source /tmp/config.sh
+          config --enable CONFIG_TMPFS_XATTR
+          config --enable CONFIG_TMPFS_POSIX_ACL
 
       - name: 杂项设置
         run: cd kernel_workspace && sed -i 's/check_defconfig//' ./common/build.config.gki
 
       - name: 启用网络功能增强优化配置
+        if: inputs.better_net
         run: |
-          cd kernel_workspace
-          if [[ "${{ env.BETTER_NET }}" == "true" ]]; then
-            #启用  BPF 流解析器,实现高性能网络流量处理,增强网络监控和分析能力
-            echo "CONFIG_BPF_STREAM_PARSER=y" >> ./common/arch/arm64/configs/gki_defconfig
-            #开启增强 Netfilter 防火墙扩展模块,支持基于地址类型的匹配规则,启用 IP 集合支持,提高防火墙规则灵活性,支持更复杂的流量过滤策略
-            echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_NETFILTER_XT_SET=y" >> ./common/arch/arm64/configs/gki_defconfig
-            #启用 IP 集框架及其多种数据结构实现,提供高效的大规模 IP 地址管理,提高防火墙规则处理效率,减少内存占用
-            echo "CONFIG_IP_SET=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_MAX=65534" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_BITMAP_IP=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_BITMAP_IPMAC=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_BITMAP_PORT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IP=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPMARK=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPPORT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPPORTIP=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPPORTNET=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPMAC=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_MAC=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NETPORTNET=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NET=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NETNET=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NETPORT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NETIFACE=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_LIST_SET=y" >> ./common/arch/arm64/configs/gki_defconfig
-            #启用 IPv6 网络地址转换
-            echo "CONFIG_IP6_NF_NAT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./common/arch/arm64/configs/gki_defconfig
-            #由于部分机型的vintf兼容性检测规则，在开启CONFIG_IP6_NF_NAT后开机会出现"您的设备内部出现了问题。请联系您的设备制造商了解详情。"的提示，故添加一个配置修复补丁，在编译内核时隐藏CONFIG_IP6_NF_NAT=y但不影响对应功能编译
-            if [[ "${{ env.STOCK_CONFIG }}" != "true" ]]; then
-              cd common
-              wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
-              patch -p1 -F 3 < config.patch || true
-            fi
+          source /tmp/config.sh
+          #启用  BPF 流解析器,实现高性能网络流量处理,增强网络监控和分析能力
+          config --enable CONFIG_BPF_STREAM_PARSER
+          #开启增强 Netfilter 防火墙扩展模块,支持基于地址类型的匹配规则,启用 IP 集合支持,提高防火墙规则灵活性,支持更复杂的流量过滤策略
+          config --enable CONFIG_NETFILTER_XT_MATCH_ADDRTYPE
+          config --enable CONFIG_NETFILTER_XT_SET
+          #启用 IP 集框架及其多种数据结构实现,提供高效的大规模 IP 地址管理,提高防火墙规则处理效率,减少内存占用
+          config --enable CONFIG_IP_SET
+          config --set-val CONFIG_IP_SET_MAX 65534
+          config --enable CONFIG_IP_SET_BITMAP_IP
+          config --enable CONFIG_IP_SET_BITMAP_IPMAC
+          config --enable CONFIG_IP_SET_BITMAP_PORT
+          config --enable CONFIG_IP_SET_HASH_IP
+          config --enable CONFIG_IP_SET_HASH_IPMARK
+          config --enable CONFIG_IP_SET_HASH_IPPORT
+          config --enable CONFIG_IP_SET_HASH_IPPORTIP
+          config --enable CONFIG_IP_SET_HASH_IPPORTNET
+          config --enable CONFIG_IP_SET_HASH_IPMAC
+          config --enable CONFIG_IP_SET_HASH_MAC
+          config --enable CONFIG_IP_SET_HASH_NETPORTNET
+          config --enable CONFIG_IP_SET_HASH_NET
+          config --enable CONFIG_IP_SET_HASH_NETNET
+          config --enable CONFIG_IP_SET_HASH_NETPORT
+          config --enable CONFIG_IP_SET_HASH_NETIFACE
+          config --enable CONFIG_IP_SET_LIST_SET
+          #启用 IPv6 网络地址转换
+          config --enable CONFIG_IP6_NF_NAT
+          config --enable CONFIG_IP6_NF_TARGET_MASQUERADE
+          #由于部分机型的vintf兼容性检测规则，在开启CONFIG_IP6_NF_NAT后开机会出现"您的设备内部出现了问题。请联系您的设备制造商了解详情。"的提示，故添加一个配置修复补丁，在编译内核时隐藏CONFIG_IP6_NF_NAT=y但不影响对应功能编译
+          if [[ "${{ inputs.STOCK_CONFIG }}" != "true" ]]; then
+            cd kernel_workspace/common
+            wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
+            patch -p1 -F 3 < config.patch || true
           fi
 
       - name: 启用内核级基带保护
+        if: inputs.baseband_guard
         run: |
-          if [[ "${{ env.BBG }}" == "true" ]]; then
-            echo "正在启用启用内核级基带保护支持…"
-            cd kernel_workspace
-            echo "CONFIG_BBG=y" >> ./common/arch/arm64/configs/gki_defconfig
-            cd ./common/
-            curl -LSs https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash -s dev
-            sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' security/Kconfig
-          fi
+          echo "正在启用启用内核级基带保护支持…"
+          source /tmp/config.sh
+          config --enable CONFIG_BBG
+          cd kernel_workspace/common
+          curl -LSs https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash -s
+          sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' security/Kconfig
 
       - name: 添加制作名称
         run: |
@@ -351,8 +379,14 @@ jobs:
           ccache -s
           echo "编译后空间:"
           df -h
+
+      - name: 保存新的 ccache 缓存
+        if: inputs.ccache_update || steps.ccache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-esk-${{ env.KERNEL_VERSION }}
          
-          
       - name: 克隆 AnyKernel3 并打包
         run: |
           cd kernel_workspace
@@ -364,7 +398,7 @@ jobs:
             echo "未找到内核镜像文件，构建可能出错"
             exit 1
           fi
-          zip -r ../${{ env.KEY }}.zip ./*
+          zip -r ../AnyKernel3.zip ./*
 
       - name: 上传到 Telegram
         env:
@@ -372,23 +406,23 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           BOT_CI_SESSION: ${{ secrets.BOT_CI_SESSION }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          SSG: ${{ env.SSG }}
-          REKERNEL: ${{ env.REKERNEL }}
-          STOCK_CONFIG: ${{ env.STOCK_CONFIG }}
-          LXC: ${{ env.LXC }}
-          BBG: ${{ env.BBG }}
-          MOUNTIFY: ${{ env.MOUNTIFY }}
-          BETTER_NET: ${{ env.BETTER_NET }}
+          SSG: ${{ inputs.ssg }}
+          REKERNEL: ${{ inputs.rekernel }}
+          STOCK_CONFIG: ${{ inputs.stock_config }}
+          LXC: ${{ inputs.lxc }}
+          BBG: ${{ inputs.baseband_guard }}
+          MOUNTIFY: ${{ inputs.tmpfs }}
+          BETTER_NET: ${{ inputs.better_net }}
         run: |
           if [ -z ${{ secrets.BOT_TOKEN }} ]; then
             exit 0
           fi
           pip3 install telethon
-          curl -LSOs https://github.com/Tools-cx-app/gki_build_action/raw/main/.github/bot.py
-          python3 bot.py ./kernel_workspace/${{ env.KEY }}.zip
+          curl -fLSs "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/.github/bot.py" -o bot.py
+          python3 bot.py ./kernel_workspace/AnyKernel3.zip
 
       - name: 上传 Ccache 调试日志
-        if: always() && env.DEBUG == 'true'
+        if: always() && inputs.ccache_debug
         uses: actions/upload-artifact@v4
         with:
           name: ccache-debug-log
@@ -397,5 +431,5 @@ jobs:
       - name: 上传 ZIP 工件
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.KEY }}
+          name: AnyKernel3
           path: ${{ github.workspace }}/kernel_workspace/*.zip
