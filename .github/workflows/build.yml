@@ -92,7 +92,7 @@ jobs:
 
           echo "正在克隆llvm-Clang22工具链..." &&
           mkdir -p clang22 &&
-          aria2c -s16 -x16 -k1M https://github.com/bachnxuan/aosp_clang_mirror/releases/download/clang-r584948b-14726520/clang-r584948b.tar.gz -o clang.zip &&
+          aria2c -s16 -x16 -k1M https://github.com/bachnxuan/aosp_clang_mirror/releases/download/clang-r596125-15071444/clang-r596125.tar.gz -o clang.zip &&
           tar -xf clang.zip -C clang22 &&
           rm -rf clang.zip &
           
