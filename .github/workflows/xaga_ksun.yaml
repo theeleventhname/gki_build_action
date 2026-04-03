@@ -11,7 +11,7 @@ on:
       KERNEL_SOURCE_BRANCH:
         description: 'Branch'
         required: true
-        default: 'lineage-23.1'      
+        default: 'lineage-23.2'      
       SUSFS_SOURCE:
         description: 'Susfs Source'
         required: true
@@ -93,7 +93,7 @@ jobs:
       run: |
         cd project
         #curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s dev_susfs
-        curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy_susfs
+        curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s dev
         cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/fs/* ./fs/
         cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/include/linux/* ./include/linux/
         cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch ./
