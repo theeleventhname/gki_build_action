@@ -19,11 +19,6 @@ on:
         required: true
         type: boolean
         default: false
-      rekernel:
-        description: '是否启用Re-Kernel支持(与Freezer/NoActive等软件配合, 提升应用冻结能力)'
-        required: true
-        type: boolean
-        default: true
       better_net:
         description: '是否开启网络功能拓展配置(用于为ipset及需要iptables等高级网络功能内核支持的程序提供支持)'
         required: true
@@ -78,7 +73,12 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             curl bison flex make binutils git perl gcc python3 \
             python-is-python3 bc libssl-dev libelf-dev \
-            bc aria2 zip unzip ccache binutils-aarch64-linux-gnu
+            bc aria2 zip unzip binutils-aarch64-linux-gnu
+          #使用最新版ccache-ECS（特化优化内核编译缓存，大幅提升二次不同配置编译速度）
+          wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/lib/ccache-x86-64 -O ccache &&
+          sudo cp -f ./ccache /usr/bin/ccache &&
+          sudo chmod +x /usr/bin/ccache &&
+          rm -f ./ccache &
       
       - name: 初始化源码仓库及llvm-Clang工具链
         run: |
@@ -150,7 +150,7 @@ jobs:
           export CCACHE_COMPILERCHECK="none"
           export CCACHE_BASEDIR="${{ github.workspace }}"
           export CCACHE_NOHASHDIR="true"
-          export CCACHE_HARDLINK="true"
+          export CCACHE_NOHARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="${{ env.CCACHE_MAXSIZE }}"
           
@@ -183,14 +183,6 @@ jobs:
           echo "下载相关文件"
           curl -fLSs "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/patches/stock_config.patch" -o stock_config.patch
           patch -p1 --fuzz=3 < stock_config.patch
-
-      - name: 添加Re:Kernel
-        if: inputs.rekernel
-        run: |
-          source /tmp/config.sh
-          config --enable CONFIG_REKERNEL
-          config --enable CONFIG_REKERNEL_NETWORK
-          
 
       - name: Config SSG I/O scheduler
         if: ${{ !inputs.ssg }}
@@ -313,9 +305,10 @@ jobs:
           export CCACHE_COMPILERCHECK="none"
           export CCACHE_BASEDIR="${{ github.workspace }}"
           export CCACHE_NOHASHDIR="true"
-          export CCACHE_HARDLINK="true"
+          export CCACHE_NOHARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="3G"
+          export CCACHE_IS_KERNEL_COMPILING="true"
           echo "sloppiness = file_stat_matches,include_file_ctime,include_file_mtime,pch_defines,file_macro,time_macros" >> "$CCACHE_DIR/ccache.conf"
 
           cd kernel_workspace/common
@@ -407,7 +400,6 @@ jobs:
           BOT_CI_SESSION: ${{ secrets.BOT_CI_SESSION }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SSG: ${{ inputs.ssg }}
-          REKERNEL: ${{ inputs.rekernel }}
           STOCK_CONFIG: ${{ inputs.stock_config }}
           LXC: ${{ inputs.lxc }}
           BBG: ${{ inputs.baseband_guard }}
