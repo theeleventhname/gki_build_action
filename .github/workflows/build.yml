@@ -9,11 +9,6 @@ env:
 on:
   workflow_dispatch:
     inputs:
-      kernelsu:
-        description: '是否包含kernelsu(builtin)'
-        required: true
-        type: boolean
-        default: true
       stock_config:
         description: '是否伪装defconfig为原厂defconfig'
         required: true
@@ -24,11 +19,16 @@ on:
         required: true
         type: boolean
         default: false
-      ssg:
-        description: '是否启用SSG IO调度器支持(提升IO读写性能)'
-        required: true
-        type: boolean
-        default: false
+      droidspaces:
+        description: "Droidspaces 容器支持"
+        required: false
+        type: choice
+        options:
+          - "off"
+          - "678"
+          - "123"
+          - "345"
+        default: "off"
       lxc:
         description: '是否启用lxc支持(部分设备可能不开机)'
         required: true
@@ -39,11 +39,15 @@ on:
         required: true
         type: boolean
         default: true
-      lto_none:
-        description: '是否关闭LTO优化(测试性；大幅提升编译速度)'
+      lto:
+        description: 'LTO级别'
         required: true
-        type: boolean
-        default: true
+        type: choice
+        options:
+          - "none"
+          - "thin"
+          - "full"
+        default: "thin"
       tmpfs:
         description: '是否开启对于mountify 的支持'
         required: true
@@ -91,7 +95,7 @@ jobs:
           rm -f ./ccache &
           
           echo "正在克隆源码仓库..." &&
-          aria2c -s16 -x16 -k1M https://github.com/Tools-cx-app/android12-5.10-gki/archive/refs/heads/main.zip -o common.zip && 
+          aria2c -s16 -x16 -k1M https://github.com/ESK-Project/android12-5.10-gki/archive/refs/heads/main.zip -o common.zip && 
           unzip -q common.zip && 
           mv "android12-5.10-gki-main" common &&
           rm -rf common.zip &
@@ -175,13 +179,6 @@ jobs:
             ccache -sv
           fi
 
-      - name: 添加KernelSU
-        id: ksu_version
-        run: |
-          # 进入内核工作目录
-          cd kernel_workspace/common
-          curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s main
-
       - name: 启用stock config
         if: inputs.stock_config
         run: |
@@ -190,15 +187,6 @@ jobs:
           curl -fLSs "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/patches/stock_config.patch" -o stock_config.patch
           patch -p1 --fuzz=3 < stock_config.patch
 
-      - name: Config SSG I/O scheduler
-        if: ${{ !inputs.ssg }}
-        run: |
-          echo "Disabling SSG I/O scheduler"
-          source /tmp/config.sh
-          config --disable CONFIG_MQ_IOSCHED_SSG
-          config --disable CONFIG_MQ_IOSCHED_SSG_CGROUP
-          config --disable CONFIG_MQ_SSG_DEFAULT
-          
       - name: 添加lxc
         if: inputs.lxc
         run: |
@@ -215,17 +203,6 @@ jobs:
             patch -p1 --forward --fuzz=3 < lxc.patch
           fi
           
-      - name: 添加 KSU 配置项
-        if: inputs.kernelsu
-        run: |
-          source /tmp/config.sh
-          config --enable CONFIG_KSU
-          echo "正在开启manual钩子..."
-          config --enable CONFIG_KSU_MANUAL_HOOK
-          config --enable CONFIG_KSU_MANUAL_HOOK_AUTO_SETUID_HOOK
-          config --enable CONFIG_KSU_MANUAL_HOOK_AUTO_INITRC_HOOK
-          config --enable CONFIG_KSU_MANUAL_HOOK_AUTO_INPUT_HOOK
-
       - name: 支持mountify/hybrid的tmpfs模式
         if: inputs.tmpfs
         run: |
@@ -234,17 +211,30 @@ jobs:
           config --enable CONFIG_TMPFS_POSIX_ACL
 
       - name: 杂项设置
-        run: cd kernel_workspace && sed -i 's/check_defconfig//' ./common/build.config.gki
+        run: |
+          cd kernel_workspace/common
+          sed -i 's/check_defconfig//' ./build.config.gki
+          curl -fLSs "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/patches/memblock.patch" -o memblock.patch
+          patch -p1 --fuzz=3 < memblock.patch
 
-      - name: 关闭LTO
-        if: inputs.lto_none
+      - name: LTO设置
         run: |
           source /tmp/config.sh
-          config --disable CONFIG_ARCH_SUPPORTS_LTO_CLANG
-          config --disable CONFIG_ARCH_SUPPORTS_LTO_CLANG_THIN
-          config --disable CONFIG_LTO_CLANG_THIN
-          config --disable CONFIG_LTO_CLANG_FULL
-          config --enable CONFIG_LTO_NONE
+          if [[ "${{ inputs.lto }}" == "none" ]]; then
+            config --disable CONFIG_ARCH_SUPPORTS_LTO_CLANG
+            config --disable CONFIG_ARCH_SUPPORTS_LTO_CLANG_THIN
+            config --disable CONFIG_LTO_CLANG_THIN
+            config --disable CONFIG_LTO_CLANG_FULL
+            config --enable CONFIG_LTO_NONE
+          elif [[ "${{ inputs.lto }}" == "thin" ]]; then
+            config --enable CONFIG_LTO_CLANG_THIN
+            config --disable CONFIG_LTO_CLANG_FULL
+            config --disable CONFIG_LTO_NONE
+          elif [[ "${{ inputs.lto }}" == "full" ]]; then
+            config --disable CONFIG_LTO_CLANG_THIN
+            config --enable CONFIG_LTO_CLANG_FULL
+            config --disable CONFIG_LTO_NONE
+          fi
 
       - name: 启用网络功能增强优化配置
         if: inputs.better_net
@@ -283,6 +273,34 @@ jobs:
             wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
             patch -p1 -F 3 < config.patch || true
           fi
+
+      - name: 集成 Droidspaces 支持
+        if: inputs.droidspaces != 'off'
+        run: |
+          source /tmp/config.sh
+          cd kernel_workspace/common
+          git clone --depth 1 https://github.com/ravindu644/Droidspaces-OSS.git droidspaces
+
+          SLOT="${{ inputs.droidspaces }}"
+          # 678 -> 6_7_8, 123 -> 1_2_3, 345 -> 3_4_5
+          SLOT_NAME=$(echo "$SLOT" | sed 's/\(.\)/\1_/g; s/_$//')
+          echo "应用 Droidspaces SYSVIPC kABI 修复补丁 (槽位: $SLOT / $SLOT_NAME)..."
+          patch -p1 --forward < "droidspaces/Documentation/resources/kernel-patches/GKI/below-kernel-6.12/001.GKI-below-6.12-fix_sysvipc_kabi_${SLOT_NAME}.patch"
+
+        
+          echo "应用 Droidspaces POSIX_MQUEUE kABI 修复补丁 (5.10)..."
+          patch -p1 --forward < "droidspaces/Documentation/resources/kernel-patches/GKI/below-kernel-6.12/002.5.10_or_lower_use_android_abi_padding_for_posix_mqueue.patch"
+          echo "添加 Droidspaces 内核配置..."
+
+          cd ../../
+          # 必要配置
+          config --enable CONFIG_SYSVIPC
+          config --enable CONFIG_POSIX_MQUEUE
+          config --enable CONFIG_IPC_NS
+          config --enable CONFIG_PID_NS
+          config --enable CONFIG_DEVTMPFS
+
+          echo "Droidspaces 集成完成"
 
       - name: 启用内核级基带保护
         if: inputs.baseband_guard
@@ -372,7 +390,6 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           BOT_CI_SESSION: ${{ secrets.BOT_CI_SESSION }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          SSG: ${{ inputs.ssg }}
           STOCK_CONFIG: ${{ inputs.stock_config }}
           LXC: ${{ inputs.lxc }}
           BBG: ${{ inputs.baseband_guard }}

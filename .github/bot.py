@@ -11,7 +11,6 @@ API_HASH = "d524b414d21f4d37f08684c1df41ac9c"
 BETTER_NET = os.environ.get("BETTER_NET")
 BBG = os.environ.get("BBG")
 LXC = os.environ.get("LXC")
-SSG = os.environ.get("SSG")
 MOUNTIFY = os.environ.get("MOUNTIFY")
 STOCK_CONFIG = os.environ.get("STOCK_CONFIG")
 
@@ -24,12 +23,9 @@ MSG_TEMPLATE = """
 ```Kernel Info
 kernelver: {kernelversion}
 stock: {stock}
-KsuVar: ReSukiSU
-KsuVersion: {ksuver}
 BBG: {bbg}
 Mountify support: {mountify}
 lxc/docker support {lxc}
-SSG speed controller: {ssg}
 better net support: {better_net}
 ```
 Please follow @@esk_gki_build !
@@ -41,8 +37,6 @@ Please follow @@esk_gki_build !
 def get_caption():
     msg = MSG_TEMPLATE.format(
         kernelversion=get_kernel_versions(),
-        ssg=SSG,
-        ksuver=get_ksu_versions(),
         stock=STOCK_CONFIG,
         mountify=MOUNTIFY,
         lxc=LXC,
@@ -74,15 +68,6 @@ def get_kernel_versions():
     except FileNotFoundError:
         raise
     return f"{version}.{patchlevel}.{sublevel}"
-
-
-def get_ksu_versions():
-    current_work = os.getcwd()
-    os.chdir(current_work+"/kernel_workspace/common/KernelSU")
-    ksuver = os.popen(
-        "echo $(git describe --tags $(git rev-list --tags --max-count=1))-$(git rev-parse --short HEAD)@$(git branch --show-current)").read().strip()
-    os.chdir(current_work)
-    return ksuver
 
 
 async def send_telegram_message(file_path: str):
