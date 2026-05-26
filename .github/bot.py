@@ -13,6 +13,9 @@ BBG = os.environ.get("BBG")
 LXC = os.environ.get("LXC")
 MOUNTIFY = os.environ.get("MOUNTIFY")
 STOCK_CONFIG = os.environ.get("STOCK_CONFIG")
+DROIDSPACES = os.environ.get("DROIDSPACES")
+LTO = os.environ.get("LTO")
+UNSHARE = os.environ.get("UNSHARE")
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHAT_ID = int(os.environ.get("CHAT_ID"))
@@ -20,15 +23,18 @@ RUN_URL = os.environ.get("RUN_URL")
 BOT_CI_SESSION = os.environ.get("BOT_CI_SESSION")
 MSG_TEMPLATE = """
 **New Build Published!**
+**LTO: {lto}**
 ```Kernel Info
 kernelver: {kernelversion}
 stock: {stock}
 BBG: {bbg}
+unshare: {unshare}
 Mountify support: {mountify}
 lxc/docker support {lxc}
+droidspaces: {droidspaces}
 better net support: {better_net}
 ```
-Please follow @@esk_gki_build !
+Please follow @esk_gki_build !
 #GKI2 #ESK
 [Workflow run]({run_url})
 """.strip()
@@ -36,10 +42,13 @@ Please follow @@esk_gki_build !
 
 def get_caption():
     msg = MSG_TEMPLATE.format(
+        lto=LTO,
         kernelversion=get_kernel_versions(),
         stock=STOCK_CONFIG,
+        unshare=UNSHARE,
         mountify=MOUNTIFY,
         lxc=LXC,
+        droidspaces=DROIDSPACES,
         bbg=BBG,
         better_net=BETTER_NET,
         run_url=RUN_URL,
