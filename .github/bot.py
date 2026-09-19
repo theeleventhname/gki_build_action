@@ -10,12 +10,14 @@ API_HASH = "d524b414d21f4d37f08684c1df41ac9c"
 
 BETTER_NET = os.environ.get("BETTER_NET")
 BBG = os.environ.get("BBG")
-LXC = os.environ.get("LXC")
 MOUNTIFY = os.environ.get("MOUNTIFY")
 STOCK_CONFIG = os.environ.get("STOCK_CONFIG")
 DROIDSPACES = os.environ.get("DROIDSPACES")
 LTO = os.environ.get("LTO")
 UNSHARE = os.environ.get("UNSHARE")
+NTSYNC = os.environ.get("NTSYNC")
+RESUKISU = os.environ.get("RESUKISU")
+CVE_2026_43499 = os.environ.get("CVE_2026_43499")
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHAT_ID = int(os.environ.get("CHAT_ID"))
@@ -27,12 +29,14 @@ MSG_TEMPLATE = """
 ```Kernel Info
 kernelver: {kernelversion}
 stock: {stock}
+resukisu: {resukisu}
 BBG: {bbg}
 unshare: {unshare}
 Mountify support: {mountify}
-lxc/docker support {lxc}
 droidspaces: {droidspaces}
+ntsync: {ntsync}
 better net support: {better_net}
+CVE-2026-43499 rtmutex fix: {cve_2026_43499}
 ```
 Please follow @esk_gki_build !
 #GKI2 #ESK
@@ -46,11 +50,13 @@ def get_caption():
         kernelversion=get_kernel_versions(),
         stock=STOCK_CONFIG,
         unshare=UNSHARE,
+        resukisu=RESUKISU,
         mountify=MOUNTIFY,
-        lxc=LXC,
         droidspaces=DROIDSPACES,
+        ntsync=NTSYNC,
         bbg=BBG,
         better_net=BETTER_NET,
+        cve_2026_43499=CVE_2026_43499,
         run_url=RUN_URL,
     )
     return msg
