@@ -157,7 +157,8 @@ jobs:
 
     - name: Make AnyKernel3
       run: |
-          git clone https://github.com/Kernel-SU/AnyKernel3.git --depth=1
+          #git clone https://github.com/Kernel-SU/AnyKernel3.git --depth=1
+          git clone https://github.com/Tools-cx-app/AnyKernel3.git --depth=1
           rm -rf ./AnyKernel3/.git
           mkdir -p kernel_workspace/kernel_platform/out/Final-Image-Find/
           image_path=$(find "/home/runner/work/gki_build_action/gki_build_action/project/out/arch/arm64/boot/" -name "Image" | head -n 1)
