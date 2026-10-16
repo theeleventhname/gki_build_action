@@ -1,4 +1,4 @@
-name: Build Xaga Resukisu Kernel
+name: Build Xaga Resukisu los 24 Kernel
 
 on:
   workflow_dispatch:
