@@ -120,7 +120,7 @@ jobs:
           #sed -i '/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/d' drivers/misc/mediatek/connectivity/bt/mt66xx/include/btmtk_define.h
           #sed -i '/^#define MAX(a, b) (((a) > (b)) ? (a) : (b))$/d' drivers/misc/mediatek/connectivity/bt/mt66xx/include/btmtk_define.h
           echo -e "CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER=y" >> arch/arm64/configs/gki_defconfig
-          sed -i '184i#ifdef CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER' fs/susfs.c && sed -i '/^static void susfs_restore_creds(struct cred \*orig_cred)/,+2{/^}$/i#endif}' fs/susfs.c
+          cp fs/susfs.c fs/susfs.c.bak && awk 'BEGIN{f=0} /^static struct cred \*susfs_switch_to_ksu_domain\(void\)/{print "#ifdef CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER"; f=1} {print} /^static void susfs_restore_creds\(struct cred \*orig_cred\)/{f=2} f==2 && /^}$/{print "#endif"; f=0}' fs/susfs.c.bak > fs/susfs.c
         fi
 
     - name: Setup Additional Option
