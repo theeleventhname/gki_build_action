@@ -93,7 +93,8 @@ jobs:
       run: |
         cd project
         #curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
-        curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash
+        #curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash
+        curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" | bash
         cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/fs/* ./fs/
         cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/include/linux/* ./include/linux/
         cp ${GITHUB_WORKSPACE}/susfs/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch ./
@@ -108,15 +109,17 @@ jobs:
       run: |      
         cd project
         if [[ "${{ env.TEMP_OPTION }}" == "false" ]];then
-          sed -i '/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/d' drivers/char/rpmb/rpmb-mtk.c
-          sed -i '/^#define MIN(a, b)			((a) >= (b) ? (b) : (a))$/d' drivers/misc/mediatek/swpm/inc/swpm_module.h
-          sed -i '/^#define MAX(a, b)			((a) >= (b) ? (a) : (b))$/d' drivers/misc/mediatek/swpm/inc/swpm_module.h
-          sed -i '/^#define MIN(x, y)	((x) < (y) ? (x) : (y))$/d' drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/mali_malisw.h
-          sed -i '/^#define MAX(x, y)	((x) < (y) ? (y) : (x))$/d' drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/mali_malisw.h
-          sed -i '/^#define MIN(x, y) ((x) < (y) ? (x) : (y))$/d' drivers/input/misc/aw8697_haptic/ringbuffer.h
-          sed -i '/^#define in_range(c, lo, up) ((int)c >= lo && (int)c <= up)$/d' drivers/misc/mediatek/connectivity/wlan/core/gen4m/include/nan/wpa_supp/FourWayHandShake.h
-          sed -i '/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/d' drivers/misc/mediatek/connectivity/bt/mt66xx/include/btmtk_define.h
-          sed -i '/^#define MAX(a, b) (((a) > (b)) ? (a) : (b))$/d' drivers/misc/mediatek/connectivity/bt/mt66xx/include/btmtk_define.h
+          #sed -i '/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/d' drivers/char/rpmb/rpmb-mtk.c
+          #sed -i '/^#define MIN(a, b)			((a) >= (b) ? (b) : (a))$/d' drivers/misc/mediatek/swpm/inc/swpm_module.h
+          #sed -i '/^#define MAX(a, b)			((a) >= (b) ? (a) : (b))$/d' drivers/misc/mediatek/swpm/inc/swpm_module.h
+          #sed -i '/^#define MIN(x, y)	((x) < (y) ? (x) : (y))$/d' drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/mali_malisw.h
+          #sed -i '/^#define MAX(x, y)	((x) < (y) ? (y) : (x))$/d' drivers/gpu/mediatek/mali-valhall/gpu/arm/midgard/mali_malisw.h
+          #sed -i '/^#define MIN(x, y) ((x) < (y) ? (x) : (y))$/d' drivers/input/misc/aw8697_haptic/ringbuffer.h
+          #sed -i '/^#define in_range(c, lo, up) ((int)c >= lo && (int)c <= up)$/d' drivers/misc/mediatek/connectivity/wlan/core/gen4m/include/nan/wpa_supp/FourWayHandShake.h
+          #sed -i '/^#define MIN(a, b) (((a) < (b)) ? (a) : (b))$/d' drivers/misc/mediatek/connectivity/bt/mt66xx/include/btmtk_define.h
+          #sed -i '/^#define MAX(a, b) (((a) > (b)) ? (a) : (b))$/d' drivers/misc/mediatek/connectivity/bt/mt66xx/include/btmtk_define.h
+          echo -e "CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER=y" >> arch/arm64/configs/gki_defconfig
+          cp fs/susfs.c fs/susfs.c.bak && awk 'BEGIN{f=0} /^static struct cred \*susfs_switch_to_ksu_domain\(void\)/{print "#ifdef CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER"; f=1} {print} /^static void susfs_restore_creds\(struct cred \*orig_cred\)/{f=2} f==2 && /^}$/{print "#endif"; f=0}' fs/susfs.c.bak > fs/susfs.c
         fi
 
     - name: Setup Additional Option
