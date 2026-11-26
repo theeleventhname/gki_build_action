@@ -81,7 +81,7 @@ jobs:
 
     - name: Checkout Susfs Source
       run: |
-        cd project
+        cd ${GITHUB_WORKSPACE}
         git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android12-5.10 susfs
       #uses: actions/checkout@v4
       #with:
